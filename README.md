@@ -2,12 +2,12 @@ SELECT TOP 100 PERCENT
     issue.IssueID,
     issue.IssueCode,
     issue.IssueRaisedBy as raisedbyid,
-    risedby.FirstName +' '+ risedby.LastName as issuerisedby,
+    risedby.FirstName + ' ' + risedby.LastName as issuerisedby,
     issue.IssueDate,
     issue.IssueShotDesc,
     issue.IssueDesc, 
     issue.IssueRaiseFor as issuerisedforid,
-    risedfor.FirstName +' '+ risedfor.LastName as issuerisedfor,
+    risedfor.FirstName + ' ' + risedfor.LastName as issuerisedfor,
     issue.IssueForGuest, 
     issue.GuestCompany,
     issue.PlantID,
@@ -26,7 +26,7 @@ SELECT TOP 100 PERCENT
     issue.AssignedTo as AssignedToid, 
     ISNULL(assignto.First_Name, '') + ISNULL(assignto.Middle_Name, '') + ISNULL(assignto.Last_Name, '') as AssignedTo,
     issue.AssignedBy as assignedbyid, 
-    ISNULL(assignby.First_Name, '') +' '+ ISNULL(assignby.Middle_Name, '') +' '+ ISNULL(assignby.Last_Name, '') as AssignedBy,
+    ISNULL(assignby.First_Name, '') + ' ' + ISNULL(assignby.Middle_Name, '') + ' ' + ISNULL(assignby.Last_Name, '') as AssignedBy,
     issue.AssignedOn,
     issue.ProposedResolutionOn,
     issue.ResolutionDt,
@@ -48,8 +48,12 @@ SELECT TOP 100 PERCENT
      AND sla.CategoryTypID = issue.CategoryTypID) as slastatus,
     -- New column for resolved value based on Status
     CASE 
-        WHEN issue.Status = 'Resolved' THEN 'ResolvedValue' 
-        ELSE NULL 
+        WHEN issue.Status = 'Resolved' THEN 
+            'Issue Resolved by: ' + ISNULL(assignby.First_Name, '') + ' ' + ISNULL(assignby.Last_Name, '') +
+            ' on ' + CONVERT(VARCHAR, issue.ResolutionDt, 106) + 
+            ' with remarks: ' + ISNULL(issue.ResolutionRemarks, 'No Remarks')
+        ELSE 
+            NULL 
     END as resolved_value
 FROM 
     IT.IssueListHistory as issue
