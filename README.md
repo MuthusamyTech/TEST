@@ -46,15 +46,29 @@ SELECT TOP 100 PERCENT
      WHERE sla.PlantID = issue.PlantID 
      AND sla.CategoryID = issue.CategoryID 
      AND sla.CategoryTypID = issue.CategoryTypID) as slastatus,
-    -- New column for resolved value based on Status
+    
+    -- New columns for resolved values based on Status
     CASE 
         WHEN issue.Status = 'Resolved' THEN 
-            'Issue Resolved by: ' + ISNULL(assignby.First_Name, '') + ' ' + ISNULL(assignby.Last_Name, '') +
-            ' on ' + CONVERT(VARCHAR, issue.ResolutionDt, 106) + 
-            ' with remarks: ' + ISNULL(issue.ResolutionRemarks, 'No Remarks')
+            ISNULL(assignby.First_Name, '') + ' ' + ISNULL(assignby.Last_Name, '')
         ELSE 
             NULL 
-    END as resolved_value
+    END as ResolvedBy, -- Column for Resolved By
+
+    CASE 
+        WHEN issue.Status = 'Resolved' THEN 
+            CONVERT(VARCHAR, issue.ResolutionDt, 106)
+        ELSE 
+            NULL 
+    END as ResolvedOn, -- Column for Resolved On
+
+    CASE 
+        WHEN issue.Status = 'Resolved' THEN 
+            ISNULL(issue.ResolutionRemarks, 'No Remarks')
+        ELSE 
+            NULL 
+    END as ResolutionRemarks -- Column for Resolution Remarks
+    
 FROM 
     IT.IssueListHistory as issue
 LEFT JOIN HR.Employee as risedby 
