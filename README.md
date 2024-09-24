@@ -4,3 +4,4 @@
                 ROLLBACK TRANSACTION;
                 RETURN;
             END
+SELECT @SRID = SCOPE_IDENTITY();
