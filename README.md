@@ -2,30 +2,28 @@ using IT_Portal.Application.Contracts.Persistence;
 using IT_Portal.Application.Features;
 using IT_Portal.Persistence.DatabaseContext;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace IT_Portal.Persistence.Repositories
 {
-    public class SupportRespository:ISupportMaster
+    public class SupportRepository : ISupportMaster
     {
         private readonly MicroLabsDevContext _context;
 
-        public SupportRespository( MicroLabsDevContext context) {
-            this._context = context;
+        public SupportRepository(MicroLabsDevContext context)
+        {
+            _context = context;
         }
 
-        public Task<CommonRsult> PostSupport(SupportMaster supp)
+        public async Task<CommonResult> PostSupport(SupportMaster supp)
         {
-            using (var context = _context)
+            try
             {
-                var SupportMaster = new SupportMaster
+                var supportMaster = new SupportMaster
                 {
-                    SupportId =1,
-                    SupportName ="Muthu",
-                    ParentId=supp.ParentId,
+                    SupportId = 1, // You should probably generate this dynamically (e.g., an auto-increment ID)
+                    SupportName = "Muthu",
+                    ParentId = supp.ParentId,
                     RPM = supp.RPM,
                     HOD = supp.HOD,
                     Image = supp.Image,
@@ -34,14 +32,29 @@ namespace IT_Portal.Persistence.Repositories
                     IsVisible = supp.IsVisible,
                     CreatedBy = supp.CreatedBy,
                     CreatedDt = supp.CreatedDt,
-                    ModifiedBy = supp.ModifiedBy
-                    ModifiedDt = supp.ModifiedDt,
-                   
+                    ModifiedBy = supp.ModifiedBy,
+                    ModifiedDt = supp.ModifiedDt
                 };
-                context.Supports.Add(SupportMaster);
-                context.SaveChanges();
+
+                _context.Supports.Add(supportMaster);
+                await _context.SaveChangesAsync();
+
+                return new CommonResult
+                {
+                    Success = true,
+                    Message = "Support record added successfully."
+                };
             }
-           
+            catch (Exception ex)
+            {
+                // You can log the exception here if needed
+
+                return new CommonResult
+                {
+                    Success = false,
+                    Message = $"Error: {ex.Message}"
+                };
+            }
         }
     }
 }
