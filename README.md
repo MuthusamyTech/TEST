@@ -1,1 +1,3 @@
-Select Constraint _Name From It . Table_constraints where table_name = 'table_name' and contraint_type = 'contraint_type';
+SELECT TABLE_NAME, TABLE_SCHEMA, TABLE_TYPE
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_TYPE = 'BASE TABLE';
