@@ -1,3 +1,3 @@
-ALTER TABLE [IT].[Checklist]  WITH CHECK ADD  CONSTRAINT [FK_Checklist_Support] FOREIGN KEY([SupportID])
-REFERENCES [IT].[Support] ([SupportID])
+ALTER TABLE [IT].[Checklist] 
+DROP CONSTRAINT [FK_Checklist_Support];
 GO
