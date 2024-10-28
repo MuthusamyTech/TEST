@@ -11,148 +11,121 @@ ALTER PROCEDURE [IT].[sp_AssignApprover]
 AS
 BEGIN 
 BEGIN TRY
-	-- SET NOCOUNT ON added to prevent extra result sets from
-	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
 
 	DECLARE @err_num int, @err_msg varchar(100)
-	Declare @Approver1 int, @Approver2 int, @Approver3 int,@Fill int,@ITApproverID int
-	Select @Fill=0 , @ITApproverID=0
+	DECLARE @Approver1 int, @Approver2 int, @Approver3 int, @Fill int, @ITApproverID int
+	SELECT @Fill = 0, @ITApproverID = 0
 
+	SELECT @ITApproverID = ITApproverID, @Approver1 = Approver1, @Approver2 = Approver2, @Approver3 = Approver3 
+	FROM [IT].[Approver]
+	WHERE SupportID = @SupportID 
+		AND CategoryID = @CategoryID 
+		AND ClassificationID = @ClassificationID 
+		AND PlantID = @PlantID
+		AND Approverstage = @Approverstage 
+		AND Level = @Level
 
-	
-		Select @ITApproverID=ITApproverID, @Approver1=Approver1, @Approver2=Approver2, @Approver3=Approver3 from [IT].[Approver]
-		where SupportID=@SupportID and CategoryID=@CategoryID 
-		and ClassificationID=@ClassificationID and PlantID=@PlantID
-		and Approverstage=@Approverstage and Level=@Level
+	IF (@Approver1 IS NULL) -- Assign @SupportTeamID to @Approver1 if it's null
+	BEGIN
+		SET @Approver1 = @SupportTeamID
+		SET @Fill = 1
+	END
+	ELSE IF ((@Approver1 IS NOT NULL AND @Approver1 != '') 
+		AND (@Approver2 IS NOT NULL AND @Approver2 != '')  
+		AND (@Approver3 IS NOT NULL AND @Approver3 != ''))
+	BEGIN
+		SET @err_num = 4000
+		SET @err_msg = 'Max Approvers are already assigned for this group'
+		RAISERROR ('Transaction Error :%d: %s', 16, 1, @err_num, @err_msg)
+		RETURN
+	END 
+	ELSE IF (@Approver1 = @SupportTeamID)
+	BEGIN
+		SET @err_num = 4000
+		SET @err_msg = 'Approver 1 is already assigned for level ' + CAST(@Level AS varchar(5))
+		RAISERROR ('Transaction Error :%d: %s', 16, 1, @err_num, @err_msg);
+		RETURN
+	END
+	ELSE IF (@Approver2 = @SupportTeamID) 
+	BEGIN
+		SET @err_num = 4000
+		SET @err_msg = 'Approver 2 is already assigned for level ' + CAST(@Level AS varchar(5))
+		RAISERROR ('Transaction Error :%d: %s', 16, 1, @err_num, @err_msg);
+		RETURN
+	END
+	ELSE IF (@Approver3 = @SupportTeamID) 
+	BEGIN
+		SET @err_num = 4000
+		SET @err_msg = 'Approver 3 is already assigned for level ' + CAST(@Level AS varchar(5))
+		RAISERROR ('Transaction Error :%d: %s', 16, 1, @err_num, @err_msg);
+		RETURN
+	END
+	ELSE
+	BEGIN
+		IF (@Approver2 IS NULL AND @Fill = 0)
+		BEGIN
+			SET @Approver2 = @SupportTeamID
+			SET @Fill = 1
+		END
+		IF (@Approver3 IS NULL AND @Fill = 0)
+		BEGIN
+			SET @Approver3 = @SupportTeamID
+			SET @Fill = 1
+		END
 
-		IF ((@Approver1!='' or @Approver1 is not null) 
-		and (@Approver2!='' or @Approver2 is not null)  
-		and (@Approver3!='' or @Approver3 is not null) )
-			BEGIN
-				select @err_num=4000
-				select @err_msg='Max Approvers are already assigned for this group'
-		
-				raiserror ('Transaction Error :%d: %s',16,1,@err_num,@err_msg)
-				Return
-			END 
-		
-			ELSE IF (@Approver1=@SupportTeamID)
-			BEGIN
-			
-				select @err_num=4000
-				select @err_msg='Approver 1 is already assigned for level '+ CAST(@Level as varchar(5))
-		
-				raiserror ('Transaction Error :%d: %s',16,1,@err_num, @err_msg);
-				Return
-			END
-			ELSE IF (@Approver2=@SupportTeamID) 
-			BEGIN
-			
-				select @err_num=4000
-				select @err_msg='Approver 2 is already assigned for level '+ CAST(@Level as varchar(5))
-		
-				raiserror ('Transaction Error :%d: %s',16,1,@err_num, @err_msg);
-				Return
-			END
-			ELSE IF (@Approver3=@SupportTeamID) 
-			BEGIN
-			
-				select @err_num=4000
-				select @err_msg='Approver 3 is already assigned for level '+ CAST(@Level as varchar(5))
-		
-				raiserror ('Transaction Error :%d: %s',16,1,@err_num, @err_msg);
-				Return
-			END
+		IF (@ITApproverID != 0)
+		BEGIN
+			BEGIN TRANSACTION
+			UPDATE [IT].[Approver] 
+			SET [Approver1] = @Approver1,
+				[Approver2] = @Approver2,
+				[Approver3] = @Approver3,
+				[ModifiedBy] = @CreatedBy,
+				[ModifiedDt] = GETDATE()
+			WHERE ITApproverID = @ITApproverID
+			COMMIT TRANSACTION
+		END
 		ELSE
 		BEGIN
-			if (@Approver3='' or @Approver3 is NULL) 
-			BEGIN
-				select @Approver1=@supportteamID
-				Select @Fill=1
-			END
-			if (@Approver2='' or @Approver2 is NULL and @Fill=0) 
-			BEGIN
-				select @Approver2=@supportteamID
-				Select @Fill=1
-			END
-			if (@Approver3='' or @Approver3 is NULL and @Fill=0) 
-			BEGIN
-				select @Approver3=@supportteamID
-				Select @Fill=1
-			END
-				    
-			--select @Approver1, @Approver2, @Approver3, @Level, @Approverstage
-
-			IF (@ITApproverID!=0)
-			BEGIN
-				BEGIN TRANSACTION
-				UPDATE  [IT].[Approver] SET
-					[Approver1]=@Approver1,
-					[Approver2]=@Approver2,
-					[Approver3]=@Approver3,
-					[ModifiedBy]=@CreatedBy,
-					[ModifiedDt]=getdate()
-					where ITApproverID=@ITApproverID
-
-					--IF (@@ERROR<>'')
-					--BEGIN
-					--	ROLLBACK TRANSACTION
-					--	RETURN error_message()
-					--END
-					COMMIT TRANSACTION
-			END
-			ELSE
-			BEGIN
-					
-				BEGIN TRANSACTION
-					INSERT INTO [IT].[Approver] (
-						[PlantID],
-						[SupportID],
-						[CategoryID],
-						[ClassificationID],
-						[Approverstage],
-						[Approver1],
-						[Approver2],
-						[Approver3],
-						[Level],
-						[CreatedBy],
-						[CreatedDt],
-						[ModifiedBy],
-						[ModifiedDt])
-					VALUES (
-						@PlantID,
-						@SupportID,
-						@CategoryID,
-						@ClassificationID,
-						@Approverstage,
-						@Approver1,
-						@Approver2,
-						@Approver3,
-						@Level,
-						@CreatedBy,
-						getdate(),
-						@CreatedBy,
-						getdate())
-
-				--IF (@@ERROR<>'')
-				--BEGIN
-				--	ROLLBACK TRANSACTION
-				--	RETURN error_message()
-				--END
-				COMMIT TRANSACTION
-			END
-		END			
+			BEGIN TRANSACTION
+			INSERT INTO [IT].[Approver] (
+				[PlantID],
+				[SupportID],
+				[CategoryID],
+				[ClassificationID],
+				[Approverstage],
+				[Approver1],
+				[Approver2],
+				[Approver3],
+				[Level],
+				[CreatedBy],
+				[CreatedDt],
+				[ModifiedBy],
+				[ModifiedDt])
+			VALUES (
+				@PlantID,
+				@SupportID,
+				@CategoryID,
+				@ClassificationID,
+				@Approverstage,
+				@Approver1,
+				@Approver2,
+				@Approver3,
+				@Level,
+				@CreatedBy,
+				GETDATE(),
+				@CreatedBy,
+				GETDATE())
+			COMMIT TRANSACTION
+		END
+	END			
 END TRY
 	
 BEGIN CATCH
-		ROLLBACK TRANSACTION
-		BEGIN
-			
-			select @err_num=ERROR_NUMBER()
-			select @err_msg=ERROR_MESSAGE()
-		
-			raiserror ('Transaction Error :%d: %s',16,1,@err_num,@err_msg);
-		END
+	ROLLBACK TRANSACTION
+	SET @err_num = ERROR_NUMBER()
+	SET @err_msg = ERROR_MESSAGE()
+	RAISERROR ('Transaction Error :%d: %s', 16, 1, @err_num, @err_msg);
 END CATCH
 END
