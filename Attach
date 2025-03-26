@@ -1,163 +1,20 @@
-[HttpPost("addFile")]
-public async Task<IActionResult> UploadFile([FromForm] srFileRquest FileRequest)
+private string GetContentType(string filePath)
 {
-    try
+    var ext = Path.GetExtension(filePath).ToLowerInvariant();
+
+    switch (ext)
     {
-        if (FileRequest.file == null || FileRequest.file.Length == 0)
-        {
-            return BadRequest("No file selected for upload.");
-        }
-
-        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "issueAttchment", "Uploads");
-
-        if (!Directory.Exists(uploadsFolder))
-        {
-            Directory.CreateDirectory(uploadsFolder);
-        }
-        var attachFile = new Isattachment
-        {
-            FileName = FileRequest.file.FileName,
-            IsActive = true,
-            Stage = "CR",
-            CreatedBy = FileRequest.CreatedBy,
-            CreatedDt = DateTime.Now,
-            ModifiedBy = FileRequest.CreatedBy,
-            ModifiedDt = DateTime.Now
-        };
-
-        if (!(FileRequest.srId == 0))
-        {
-            attachFile.Isid = FileRequest.srId;
-        }
-        _context.Isattachments.Add(attachFile);
-        await _context.SaveChangesAsync();
-
-        var attachId = attachFile.AttachId;
-
-        var fileName = $"{attachId}_{FileRequest.file.FileName}";
-        var filePath = Path.Combine(uploadsFolder, fileName);
-
-        using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await FileRequest.file.CopyToAsync(stream);
-        }
-
-        return Ok(new { attachId });
-    }
-    catch (Exception ex)
-    {
-        return StatusCode(StatusCodes.Status500InternalServerError, $"Internal server error: {ex.Message}");
+        case ".jpg":
+        case ".jpeg":
+            return "image/jpeg";
+        case ".png":
+            return "image/png";
+        case ".gif":
+            return "image/gif";
+        case ".pdf":
+            return "application/pdf";
+        default:
+            return "application/octet-stream";
     }
 }
-
-[HttpGet("GetFileData")]
-public IActionResult GetFileData(string srId)
-{
-    try
-    {
-        if (string.IsNullOrEmpty(srId))
-        {
-            return BadRequest("Service ID and fileName are required");
-        }
-
-        var attachmentDataList = _context.Srattachments.Where(m => (bool)m.IsActive && m.Srid.ToString() == srId);
-        return Ok(attachmentDataList);
-    }
-    catch (Exception e)
-    {
-        return Ok(e.Message);
-    }
-}
-
-[HttpDelete("Delete/{attachId}")]
-public async Task<IActionResult> DeleteFile(int attachId)
-{
-    try
-    {
-        var attachFile = await _context.Srattachments.FindAsync(attachId);
-        if (attachFile == null)
-        {
-            return NotFound("File not found.");
-        }
-
-        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "issueAttchment", "Uploads");
-        var fileName = $"{attachId}_{attachFile.FileName}";
-        var filePath = Path.Combine(uploadsFolder, fileName);
-
-        if (System.IO.File.Exists(filePath))
-        {
-            System.IO.File.Delete(filePath);
-        }
-
-        _context.Srattachments.Remove(attachFile);
-        await _context.SaveChangesAsync();
-
-        return Ok(new { message = "File deleted successfully." });
-    }
-    catch (Exception ex)
-    {
-        return Ok(ex.Message);
-    }
-}
-
-
-[HttpGet("Download/{attachId}")]
-public async Task<IActionResult> DownloadFile(int attachId)
-{
-    try
-    {
-        var attachFile = await _context.Srattachments.FindAsync(attachId);
-        if (attachFile == null)
-        {
-            return NotFound("File not found.");
-        }
-
-        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "issueAttchment", "Uploads");
-        var fileName = $"{attachId}_{attachFile.FileName}";
-        var filePath = Path.Combine(uploadsFolder, fileName);
-
-        if (!System.IO.File.Exists(filePath))
-        {
-            return NotFound("File not found on the server.");
-        }
-
-        var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
-        return File(fileBytes, "application/octet-stream", attachFile.FileName);
-    }
-    catch (Exception ex)
-    {
-        return StatusCode(StatusCodes.Status500InternalServerError, $"Internal server error: {ex.Message}");
-    }
-}
-
-[HttpGet("View/{attachId}")]
-public async Task<IActionResult> viewFile(int attachId)
-{
-    try
-    {
-        var attachFile = await _context.Srattachments.FindAsync(attachId);
-        if (attachFile == null)
-        {
-            return NotFound("File not found.");
-        }
-
-        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "issueAttchment", "Uploads");
-        var fileName = $"{attachId}_{attachFile.FileName}";
-        var filePath = Path.Combine(uploadsFolder, fileName);
-
-        if (!System.IO.File.Exists(filePath))
-        {
-            return NotFound("File not found on the server.");
-        }
-
-        var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
-
-        var contentType = GetContentType(filePath);
-
-        return File(fileBytes, contentType, attachFile.FileName);
-    }
-    catch (Exception ex)
-    {
-        return StatusCode(StatusCodes.Status500InternalServerError, $"Internal server error: {ex.Message}");
-    }
-}
+    
